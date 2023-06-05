@@ -4,7 +4,7 @@ Clone the repository and get to work...
 
 ## INSTALL REQUIREMENTS
 ```bash
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## USING THE SCRAPER
