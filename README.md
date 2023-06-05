@@ -1,11 +1,11 @@
 A Unibet Web Scraper for fetching horse racing odds from Unibet
 
-# installation
+# INSTALLATION
 ```bash
 $ pip install unibetscraper
 ```
 
-## Using the scraper
+## USING THE SCRAPER
 The scraper can be used as follows: 
 - Add an EMAIL_ADDRESS & an EMAIL_PASS [special key obtained from e.g. Gmail] to the collectodds.py file, emails will be delivered from this address.
 - Create a local Excel file named unibetodds, with one sheet named "Unibet - W&P" and a second one named "Unibet - H2H". Store it
