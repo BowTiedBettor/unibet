@@ -1,4 +1,4 @@
-from unibetscraper.scraper import UnibetScraper
+from scraper import UnibetScraper
 import os
 
 track = "Lingfield"
