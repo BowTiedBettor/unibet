@@ -1,6 +1,9 @@
 A Unibet Web Scraper for fetching horse racing odds from Unibet
 
-Clone the repository and get to work...
+## CLONE THE REPOSITORY
+```bash
+git clone https://github.com/BowTiedBettor/unibet.git
+```
 
 ## INSTALL REQUIREMENTS
 ```bash
