@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 from curl_cffi import requests as cffi_requests
 from traceback import print_exc
 from openpyxl import load_workbook
-import smtplib
+import matplotlib.pyplot as plt
 import json
+import smtplib
 import time
 import sys
 
@@ -62,14 +63,15 @@ class UnibetScraper:
         until = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d') # adjust this for consecutive days at the same racetrack
 
         try:
-            if self.harness: 
-                response = cffi_requests.get(f"https://rsa.unibet.co.uk/api/v1/graphql?operationName=MeetingsByDateRange&variables=%7B%22startDateTime%22%3A%22{start}T23%3A00%3A00.000Z%22%2C%22endDateTime%22%3A%22{until}T23%3A00%3A00.000Z%22%2C%22countryCodes%22%3A%22{self.countrycode}%22%2C%22raceTypes%22%3A%5B%22H%22%5D%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22b975a015a4d4e4dc298ebd6dd43e988ebf03fb940e2bb719478b59bde7bbffd6%22%7D%7D",
-                    headers=self.headers)
-            else: 
-                response = cffi_requests.get(f"https://rsa.unibet.co.uk/api/v1/graphql?operationName=MeetingsByDateRange&variables=%7B%22startDateTime%22%3A%22{start}T23%3A00%3A00.000Z%22%2C%22endDateTime%22%3A%22{until}T23%3A00%3A00.000Z%22%2C%22countryCodes%22%3A%22{self.countrycode}%22%2C%22raceTypes%22%3A%5B%22T%22%5D%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22b975a015a4d4e4dc298ebd6dd43e988ebf03fb940e2bb719478b59bde7bbffd6%22%7D%7D",
-                    headers=self.headers)
-            
-            meetings = response.json()['data']['viewer']['meetingsByDateRange']
+            params = {
+                'operationName': 'LobbyMeetingListQuery',
+                'variables': {"countryCodes":[self.countrycode],"clientCountryCode":"SE","startDateTime":f"{start}T22:00:00.000Z","endDateTime":f"{until}T22:00:00.000Z","virtualStartDateTime":"2023-06-08T19:01:16.612Z","virtualEndDateTime":"2023-06-09T00:01:16.612Z","isRenderingVirtual":False,"fetchTRC":False,"raceTypes":["T","G","H"]},
+                'extensions': {"persistedQuery":{"version":1,"sha256Hash":"ab31a0895da2d02289619580436ad1c2c6624452acc494a05d48a9d41d0bf037"}},
+            }
+
+            response = cffi_requests.get('https://rsa.unibet.co.uk/api/v1/graphql', params=params, headers=self.headers)
+
+            meetings = response.json()['data']['viewer']['meetings']
 
             # uncomment the below lines if you'd like to analyze the generated json data for a given race
             # with open('comps.json', 'w') as file:
@@ -235,29 +237,42 @@ class UnibetScraper:
     def awaitnewodds(self, races: list, delta: int):
         """
         """
-        # calls the get_meeting method to obtain the eventkeys for the races
-        eventkeys = self.get_meeting(races = races)
-
-        # queries the API to get info for all the races
-        params = {
-                'operationName': 'MultiCouponEventsQuery',
-                'variables': json.dumps({"eventKeys": eventkeys}),
-                'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"b8c95b2e242eee16704457a7f0b427d01b558b8cb261292efcadb84b5ea987bb"}}',
-            }
+        # apparently a maximum of 4 days diff or the server won't respond correctly
+        start = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        until = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d') # adjust this for consecutive days at the same racetrack
 
         while True:
             try:
-                response_json = cffi_requests.get('https://rsa.unibet.co.uk/api/v1/graphql', params=params, headers=self.headers).json()
+                params = {
+                    'operationName': 'LobbyMeetingListQuery',
+                    'variables': {"countryCodes":[self.countrycode],"clientCountryCode":"SE","startDateTime":f"{start}T22:00:00.000Z","endDateTime":f"{until}T22:00:00.000Z","virtualStartDateTime":"2023-06-08T19:01:16.612Z","virtualEndDateTime":"2023-06-09T00:01:16.612Z","isRenderingVirtual":False,"fetchTRC":False,"raceTypes":["T","G","H"]},
+                    'extensions': {"persistedQuery":{"version":1,"sha256Hash":"ab31a0895da2d02289619580436ad1c2c6624452acc494a05d48a9d41d0bf037"}},
+                }
 
-                events = response_json['data']['viewer']['events']
+                response_json = cffi_requests.get('https://rsa.unibet.co.uk/api/v1/graphql', params=params, headers=self.headers).json()
+                
+                meetings = response_json['data']['viewer']['meetings']
+
+                for meet in meetings:
+                    if meet['name'] == self.track:
+                        events = meet['events']
+                        break
+
                 # loops through the events & checks whether the status for any of them is "Open"
                 for event in events:
-                    if event['status'] == "Open":
-                        print(f"Unibet - Odds for {self.track} have now been released!")
-                        return True
+                    if event['sequence'] >= races[0] and event['sequence'] <= races[1]: 
+                        if event['status'] == "Open":
+                            print(f"Unibet - Odds for {self.track} have now been released!")
+                            return True
                 # if no event status was "Open", an exception is raised to execute the except block
-                # note that if there was a problem with the request then it retries
+                # note that if there was a problem with the request the it retries
                 raise Exception
+            
+            except UnboundLocalError:
+                # raised if no matching meeting could be found on the sportsbook
+                # since the variable events isn't assigned anything
+                print(f"No meeting for {self.track} could be found...")
+                sys.exit()
 
             except:
                 print(datetime.now())
@@ -348,10 +363,48 @@ class UnibetScraper:
 
     def get_historical_odds(self, race: int, horse: str):
         """
+        Returns a dictionary with all historical WIN odds & their timestamps
         """
-        pass
+        eventkey = self.get_meeting(races = [race, race])[0]
+        
+        response_json = cffi_requests.get(f'https://rsa.unibet.co.uk/api/v1/graphql?operationName=EventQuery&variables=%7B%22clientCountryCode%22%3A%22SE%22%2C%22eventKey%22%3A%22{eventkey}%22%2C%22fetchTRC%22%3Afalse%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%228fee3aa36e812c03f4cb039cb2f2c2defc919ea7a89b9b942e5e79588260a8b7%22%7D%7D').json()
 
-    def plot_historical_odds(self, race: int, horse: str): 
+        competitors = response_json['data']['viewer']['event']['competitors']
+
+        for comp in competitors: 
+            if comp['name'] == horse: 
+                prices = comp['prices']
+                for price in prices: 
+                    if price['betType'] == 'FixedWin': 
+                        dummy_fluctuations = []
+                        fluctuations = price['flucs']
+                        for fluc in fluctuations: 
+                            try: 
+                                timestamp_str = fluc['timestampUtc']
+                                timestamp = datetime.fromisoformat(timestamp_str[:-1])  # Remove the "Z" at the end
+                                dummy_fluctuations.append({"timestamp": timestamp, "price": fluc['price']})
+                            except:
+                                continue
+                        
+                        adj_fluctuations = sorted(dummy_fluctuations, key=lambda x: x["timestamp"])
+                        
+                        return adj_fluctuations
+        
+        return None
+
+    def plot_historical_odds(self, fluctuations: list, horse: str, hours_ahead_of_UK = 0): 
         """
+        Takes a sorted list with {timestamp: "", price: ""} dicts and plots the odds movements
         """
-        pass
+        
+        timestamps = []
+        prices = []
+        for fluc in fluctuations: 
+            timestamps.append((fluc['timestamp'] + timedelta(hours=hours_ahead_of_UK)).strftime("%H:%M"))
+            prices.append(fluc['price'])
+
+        plt.plot(timestamps, prices)
+        plt.title(f'{horse} - Historical Odds')
+        plt.ylabel("Odds")
+        plt.xlabel("Timestamp")
+        plt.show()
