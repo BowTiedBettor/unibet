@@ -59,5 +59,6 @@ for i, horse in enumerate(horses):
     ax.set_xlabel("Timestamp")
 
 # Show the plot
+fig.suptitle(f"{track} - Race {race}")
 plt.show()
 
