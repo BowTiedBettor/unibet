@@ -20,7 +20,7 @@ recipients = ["example_1@gmail.com", "example_2@gmail.com"] # add recipients
 ############################################
 ############################################
 
-u = UnibetScraper(track = track, countrycode = "GBR", harness = False)
+u = UnibetScraper(track = track, countrycode = "GBR")
 
 """
 AWAIT NEW ODDS
