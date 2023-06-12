@@ -14,7 +14,7 @@ EMAIL_ADDRESS = "ADD_EMAIL_ADDRESS"
 EMAIL_PASS = "ADD_EMAIL_PASS"
 
 class UnibetScraper:
-    def __init__(self, track, countrycode = "GBR", harness = False):
+    def __init__(self, track, countrycode = "GBR"):
         """
         Generates the class object & defines the request headers for upcoming requests
         Stores the track name without åäö-letters in case those are included
@@ -46,7 +46,6 @@ class UnibetScraper:
         
         self.track = adj_track
         self.countrycode = countrycode
-        self.harness = harness
 
     def get_meeting(self, races: list):
         """
