@@ -54,11 +54,11 @@ for i, horse in enumerate(horses):
         prices.append(fluc['price'])
 
     ax.plot(timestamps, prices)
-    ax.set_title(f'{horse} - Historical Odds')
+    ax.set_title(f'{horse}')
     ax.set_ylabel("Odds")
     ax.set_xlabel("Timestamp")
 
 # Show the plot
-fig.suptitle(f"{track} - Race {race}")
+fig.suptitle(f"{track} - Race {race}", fontweight = "bold")
 plt.show()
 
