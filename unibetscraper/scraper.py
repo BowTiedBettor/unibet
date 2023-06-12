@@ -383,7 +383,12 @@ class UnibetScraper:
                                 timestamp = datetime.fromisoformat(timestamp_str[:-1])  # Remove the "Z" at the end
                                 dummy_fluctuations.append({"timestamp": timestamp, "price": fluc['price']})
                             except:
-                                continue
+                                try: 
+                                    timestamp_str = fluc['timestampUtc']
+                                    timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "0"))  # Remove the "Z" at the end
+                                    dummy_fluctuations.append({"timestamp": timestamp, "price": fluc['price']})
+                                except: 
+                                    continue
                         
                         adj_fluctuations = sorted(dummy_fluctuations, key=lambda x: x["timestamp"])
                         
@@ -395,7 +400,6 @@ class UnibetScraper:
         """
         Takes a sorted list with {timestamp: "", price: ""} dicts and plots the odds movements
         """
-        
         timestamps = []
         prices = []
         for fluc in fluctuations: 
