@@ -16,6 +16,9 @@ The scraper can be used as follows:
 - Create a local Excel file named "unibetodds.xlsx", with one sheet named "Unibet - W&P" and a second one named "Unibet - H2H". Store it
 on your Desktop.
 - Visit the collectodds.py script, decide on the six variables at the top of the file [add email recipients] -> run the program.
+- Use the plotting functions to display odds movements.
+
+![](oddsplots.png)
 
 [Visit BowTiedBettor for more content](https://www.bowtiedbettor.com)
 
